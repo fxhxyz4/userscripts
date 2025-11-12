@@ -35,7 +35,7 @@ app.post('/askAI', async (req, res) => {
       
       answers.push({
         question: q,
-        aiAnswer: data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        aiAnswer: data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
       });
     } catch (err) {
       answers.push({ question: q, aiAnswer: 'Помилка AI: ' + err.message });
