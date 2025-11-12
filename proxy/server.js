@@ -31,12 +31,69 @@ app.post('/askAI', async (req, res) => {
         }
       );
 
-      const data = await r.json();
-      
-      answers.push({
-        question: q,
-        aiAnswer: data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
-      });
+const rawText = await r.text().catch(() => '');
+let data;
+try {
+  data = rawText ? JSON.parse(rawText) : {};
+} catch (e) {
+  data = {};
+}
+
+console.warn('Google raw (preview):', rawText.slice(0, 2048));
+
+function findFirstString(obj) {
+  if (!obj) return null;
+  if (typeof obj === 'string') {
+    const s = obj.trim();
+    if (s.length > 0) return s;
+    return null;
+  }
+  if (Array.isArray(obj)) {
+    for (const it of obj) {
+      const found = findFirstString(it);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof obj === 'object') {
+    const tryKeys = ['text', 'content', 'message', 'output', 'candidates', 'candidatesText', 'response', 'outputText'];
+    for (const k of tryKeys) {
+      if (obj[k]) {
+        const found = findFirstString(obj[k]);
+        if (found) return found;
+      }
+    }
+    for (const k of Object.keys(obj)) {
+      const found = findFirstString(obj[k]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+let extracted =
+  data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+  data?.candidates?.[0]?.text ||
+  data?.output?.[0]?.content?.text ||
+  data?.message?.content?.parts?.[0]?.text ||
+  null;
+
+if (!extracted) {
+  extracted = findFirstString(data);
+}
+
+const aiText = extracted ? String(extracted).trim() : '';
+
+if (!aiText) {
+  console.warn('No extracted text for prompt. Sending rawPreview back to client for debugging.');
+}
+
+answers.push({
+  question: q,
+  aiAnswer: aiText,
+  rawPreview: rawText ? rawText.slice(0, 1000) : null
+});
+
     } catch (err) {
       answers.push({ question: q, aiAnswer: 'Помилка AI: ' + err.message });
     }
