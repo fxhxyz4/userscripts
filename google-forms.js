@@ -54,7 +54,12 @@
       const data = await res.json();
       console.info('[GoogleFormsAI] Отримано відповіді від AI');
       
-      console.table(data);
+      if (Array.isArray(data)) {
+        console.table(data.map(({ question, aiAnswer }) => ({ question, aiAnswer })));
+      } else {
+        console.warn('⚠️ Невірний формат відповіді від сервера:', data);
+      }
+
       render(data);
     } catch (e) {
       console.error('[GoogleFormsAI] Помилка запиту до сервера:', e);
